@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Collaborative Multi-Seat Workspace & Resource Booking Engine with zero double-allocation, 90-second soft-locks, and real-time availability synchronization.">
+    <title>MultiSeat Engine | Collaborative Resource Reservation</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/grid.css">
+    <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Header / Top Navigation Bar -->
+        <header class="app-header" role="banner">
+            <div class="brand-section">
+                <div class="brand-logo" aria-hidden="true">⚡</div>
+                <div>
+                    <h1 class="brand-title">MultiSeat Engine</h1>
+                    <p class="brand-subtitle">Zero Double-Allocation • 90s Soft-Lock Reservation Engine</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <!-- User Persona Switcher -->
+                <div class="user-persona-box" title="Switch user persona to test quota limits and multi-user race conditions">
+                    <span class="user-avatar-badge" id="userAvatar">👩‍💼</span>
+                    <div class="user-select-wrap">
+                        <label for="userPersonaSelect" class="user-select-label">Current Session</label>
+                        <select id="userPersonaSelect" class="user-persona-select" aria-label="Switch User Persona">
+                            <!-- Populated dynamically via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Daily Quota Meter (Max 3h) -->
+                <div class="quota-widget" title="Daily booking limit: Maximum 3 cumulative hours per user per day">
+                    <div class="quota-header">
+                        <span class="quota-title">Daily Quota</span>
+                        <span id="quotaUsedBadge" class="quota-badge badge-ok">0 / 3 hrs</span>
+                    </div>
+                    <div class="quota-bar-track">
+                        <div id="quotaBarFill" class="quota-fill fill-normal" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Backend / Mock Toggle -->
+                <div class="system-status-group">
+                    <button type="button" id="modeToggleBtn" class="mode-toggle-btn" title="Toggle between Simulated In-Memory Mock and Live Flask Backend">
+                        <span class="mode-dot" aria-hidden="true">●</span>
+                        <span id="modeBadgeText" class="badge-mode badge-mock">Mode: Simulated Mock</span>
+                    </button>
+
+                    <!-- Manual Refresh Button -->
+                    <button type="button" id="manualRefreshBtn" class="icon-button" title="Manually refresh resource availability now">
+                        <span id="refreshIcon" class="refresh-icon" aria-hidden="true">🔄</span>
+                        <span>Sync</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Controls Bar: Date Selector, Quick Dates, Sync Status -->
+        <section class="controls-bar" aria-label="Reservation Controls">
+            <div class="date-controls">
+                <div class="date-input-wrap">
+                    <span class="date-input-icon" aria-hidden="true">📅</span>
+                    <input type="date" id="bookingDatePicker" class="date-input" aria-label="Select Reservation Date">
+                </div>
+
+                <div class="quick-date-group" role="group" aria-label="Quick Date Selection">
+                    <button type="button" class="quick-date-btn active" data-offset="0">Today</button>
+                    <button type="button" class="quick-date-btn" data-offset="1">Tomorrow</button>
+                    <button type="button" class="quick-date-btn" data-offset="2">+2 Days</button>
+                </div>
+            </div>
+
+            <div class="realtime-status-pill">
+                <span class="sync-indicator" aria-hidden="true">🟢</span>
+                <span class="sync-text">Auto-Polling Active (5s)</span>
+            </div>
+        </section>
+
+        <!-- Status Legend & Policy Summary -->
+        <section class="status-legend-bar" aria-label="Matrix Color Legend">
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-available" aria-hidden="true"></span>
+                    <span>Green: Available (Click to Hold)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-held-me" aria-hidden="true"></span>
+                    <span>Yellow (Pulse): Held by You</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-held-other" aria-hidden="true"></span>
+                    <span>Yellow (Dashed): Soft-Locked by Other</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch swatch-booked" aria-hidden="true"></span>
+                    <span>Red: Confirmed Booking</span>
+                </div>
+            </div>
+
+            <div class="legend-tip">
+                ⚡ <strong>Policy:</strong> Selecting a slot places a 90s temporary lock across all screens.
+            </div>
+        </section>
+
+        <!-- Main Interactive Matrix Grid -->
+        <main id="matrixContainer" class="matrix-container" aria-label="Interactive Resource Matrix" role="region">
+            <!-- Grid table dynamically injected by grid.js -->
+        </main>
+
+    </div>
+
+    <!-- 90-Second Temporary Hold & Confirmation Modal -->
+    <div id="bookingModalOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalResourceTitle">
+        <div class="modal-card" id="bookingModal">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <div class="modal-header-meta">
+                    <span id="modalResourceBadge" class="modal-resource-badge">Resource</span>
+                    <h2 id="modalResourceTitle" class="modal-title">Resource Slot</h2>
+                    <div id="modalDateSlot" class="modal-date-slot">Date & Time</div>
+                </div>
+                <button type="button" id="modalCloseBtn" class="modal-close-btn" aria-label="Cancel and close hold dialog">&times;</button>
+            </div>
+
+            <!-- 90-Second Soft-Lock Countdown Section -->
+            <div class="modal-timer-section" id="modalTimerContainer">
+                <div class="timer-header">
+                    <span class="timer-label">
+                        <span aria-hidden="true">⏳</span> Temporary Soft-Lock
+                    </span>
+                    <span id="modalTimerDigits" class="timer-digits">01:30</span>
+                </div>
+                <div class="timer-progress-track">
+                    <div id="modalTimerProgress" class="timer-progress-fill" style="width: 100%;"></div>
+                </div>
+                <div class="timer-subtext">
+                    This slot is reserved exclusively for you. If not confirmed before time expires, it will be automatically released.
+                </div>
+            </div>
+
+            <!-- Booking Details Form -->
+            <div class="modal-body">
+                <!-- Agenda Input -->
+                <div class="form-group">
+                    <label for="modalAgendaInput" class="form-label">
+                        <span>Meeting Agenda & Objectives</span>
+                        <span class="form-hint">Required for reservation</span>
+                    </label>
+                    <textarea 
+                        id="modalAgendaInput" 
+                        class="form-textarea" 
+                        placeholder="e.g. Distributed Model Training review, Sprint Architecture Planning, or Client Presentation"
+                        rows="2"
+                    ></textarea>
+                </div>
+
+                <!-- Collaborator Invite Tags -->
+                <div class="form-group">
+                    <label for="modalCollabInput" class="form-label">
+                        <span>Invite Collaborators / Team Members</span>
+                        <span class="form-hint">Press Enter or comma to add email</span>
+                    </label>
+                    <div class="collab-input-row">
+                        <input 
+                            type="text" 
+                            id="modalCollabInput" 
+                            class="form-input" 
+                            placeholder="colleague@workspace.io"
+                        >
+                    </div>
+
+                    <!-- Collaborator Chips Container -->
+                    <div id="modalCollabChips" class="collab-chips-container" aria-live="polite">
+                        <!-- Chips inserted dynamically -->
+                    </div>
+
+                    <!-- Quick Add Suggestions -->
+                    <div class="quick-add-section" id="quickAddChips">
+                        <span>Quick Add:</span>
+                        <button type="button" class="quick-collab-btn" data-email="bob@workspace.io">+ Bob Martinez</button>
+                        <button type="button" class="quick-collab-btn" data-email="charlie@workspace.io">+ Charlie Chen</button>
+                        <button type="button" class="quick-collab-btn" data-email="dev-team@workspace.io">+ Dev Team</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="modal-footer">
+                <button type="button" id="modalCancelBtn" class="btn-secondary">
+                    Cancel Hold
+                </button>
+                <button type="button" id="modalConfirmBtn" class="btn-primary">
+                    <span>Confirm Reservation</span>
+                    <span class="arrow-icon" aria-hidden="true">→</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification Container -->
+    <div id="toastContainer" class="toast-container" aria-live="assertive" role="status">
+        <!-- Toast notifications dynamically spawned -->
+    </div>
+
+    <!-- Application Bootstrap -->
+    <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
