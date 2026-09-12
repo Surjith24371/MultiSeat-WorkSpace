@@ -1,0 +1,372 @@
+/* ==========================================================================
+   grid.css - Interactive Matrix (Resource x Hourly Slot) Stylesheet
+   ========================================================================== */
+
+.matrix-container {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    position: relative;
+}
+
+/* Loading overlay for the grid */
+.matrix-container.grid-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 9, 14, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 50;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease;
+}
+
+.matrix-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+    max-height: calc(100vh - 270px);
+    min-height: 480px;
+}
+
+/* Custom Scrollbar for horizontal scrolling */
+.matrix-table-wrapper::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.matrix-table-wrapper::-webkit-scrollbar-track {
+    background: rgba(14, 19, 31, 0.8);
+}
+
+.matrix-table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+}
+
+.matrix-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Matrix Table Structure */
+.matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+/* Sticky Headers */
+.matrix-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: #0f1627;
+}
+
+.matrix-th-resource,
+.matrix-th-time {
+    padding: 14px 16px;
+    border-bottom: 2px solid var(--border-medium);
+    border-right: 1px solid var(--border-subtle);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* Top-Left Corner Junction */
+.matrix-th-resource.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 35;
+    background: #0d1322;
+    min-width: 250px;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.th-resource-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+}
+
+.matrix-th-time {
+    min-width: 128px;
+    text-align: center;
+}
+
+.th-time-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.time-main {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.time-sub {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+
+/* Resource Rows */
+.matrix-row {
+    transition: background 0.15s ease;
+}
+
+.matrix-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Sticky Left Column (Resource Cards) */
+.matrix-td-resource.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: #0c1220;
+    border-bottom: 1px solid var(--border-subtle);
+    border-right: 1px solid var(--border-medium);
+    padding: 12px 16px;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35);
+}
+
+.resource-card-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.res-icon {
+    font-size: 1.5rem;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--border-subtle);
+}
+
+.res-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.res-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+.res-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+/* Slot Cell TD */
+.matrix-td-slot {
+    padding: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    border-right: 1px solid var(--border-subtle);
+    vertical-align: middle;
+}
+
+/* Base Slot Button */
+.slot-cell {
+    width: 100%;
+    min-height: 64px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    padding: 8px 6px;
+    background: transparent;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-family: inherit;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+}
+
+.cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    text-align: center;
+    width: 100%;
+}
+
+.cell-status-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.cell-status-text {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.cell-sub-text {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   State 1: AVAILABLE (Green)
+   ========================================================================== */
+.slot-cell.cell-available {
+    background: var(--color-available-bg);
+    border-color: var(--color-available-border);
+    cursor: pointer;
+}
+
+.slot-cell.cell-available .cell-status-text {
+    color: #34d399;
+}
+
+.slot-cell.cell-available:hover {
+    transform: translateY(-2px);
+    background: rgba(16, 185, 129, 0.22);
+    border-color: var(--color-available);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.slot-cell.cell-available:active {
+    transform: translateY(0);
+}
+
+/* ==========================================================================
+   State 2A: HELD BY CURRENT USER (Yellow / Pulsing)
+   ========================================================================== */
+.slot-cell.cell-held-me {
+    background: var(--color-held-bg);
+    border-color: var(--color-held);
+    cursor: pointer;
+    animation: heldPulse 2s infinite ease-in-out;
+}
+
+.slot-cell.cell-held-me .cell-status-text {
+    color: #fbbf24;
+}
+
+@keyframes heldPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+        border-color: var(--color-held);
+    }
+    50% {
+        box-shadow: 0 0 14px 2px rgba(245, 158, 11, 0.6);
+        border-color: #fde047;
+    }
+}
+
+/* ==========================================================================
+   State 2B: HELD BY SOMEONE ELSE (Muted Yellow / Padlock)
+   ========================================================================== */
+.slot-cell.cell-held-other {
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px dashed rgba(245, 158, 11, 0.45);
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.slot-cell.cell-held-other .cell-status-text {
+    color: #d97706;
+}
+
+/* ==========================================================================
+   State 3: BOOKED (Red / Disabled)
+   ========================================================================== */
+.slot-cell.cell-booked {
+    background: var(--color-booked-bg);
+    border-color: var(--color-booked-border);
+    cursor: not-allowed;
+    opacity: 0.78;
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 8px,
+        rgba(239, 68, 68, 0.04) 8px,
+        rgba(239, 68, 68, 0.04) 16px
+    );
+}
+
+.slot-cell.cell-booked .cell-status-text {
+    color: #f87171;
+}
+
+/* Hover Tooltip */
+.cell-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #090e18;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: #ffffff;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.15s ease;
+    z-index: 60;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+}
+
+.cell-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #090e18;
+}
+
+.slot-cell:hover .cell-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .matrix-th-resource.sticky-col,
+    .matrix-td-resource.sticky-col {
+        min-width: 200px;
+    }
+    
+    .slot-cell {
+        min-height: 56px;
+    }
+}
